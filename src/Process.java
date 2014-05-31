@@ -10,24 +10,29 @@ public class Process extends Thread{
 
 	private Page[] m_pages;
 	private int m_workingSet;
-	private int m_id;
+	private int m_pid;
 	private int m_processAcessDelay;
 	
 	Map<Integer, Integer> m_frameTable;
 	List<Integer> m_allocatedPages;
 	
-	private static int s_id = 0;
+	private static int s_nextPid = 0;
 	private static Integer s_lock = 0;
 	
 	public Process(final int pageCount, final int workingSet, final int processAcessDelay){
+		m_pid = s_nextPid++;
+
 		m_pages = new Page[pageCount];
+		
+		for (int i = 0; i < pageCount; ++i){
+			m_pages[i] = new Page(m_pid);
+		}
+		
 		m_workingSet = workingSet;
 		m_processAcessDelay = processAcessDelay;
 		
 		m_allocatedPages = new ArrayList<Integer>();
 		m_frameTable = new HashMap<Integer, Integer>();
-		
-		m_id = s_id++;
 	}
 	
 	public void run () {
@@ -44,6 +49,11 @@ public class Process extends Thread{
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public void deallocateAll(){
+		m_allocatedPages.clear();
+		m_frameTable.clear();
 	}
 
 	private void allocateRandomPage() {
@@ -73,11 +83,15 @@ public class Process extends Thread{
 
 	@SuppressWarnings("rawtypes")
 	private void printFrameTable(){
-		System.out.println("Thread " + m_id);
+		System.out.println("Thread " + m_pid);
 		Iterator it = m_frameTable.entrySet().iterator();
 	    while (it.hasNext()) {
 	        Map.Entry pairs = (Map.Entry)it.next();
 	        System.out.println(pairs.getKey() + "-->" + pairs.getValue());
 	    }
+	}
+
+	public Integer getPid() {
+		return m_pid;
 	}
 }

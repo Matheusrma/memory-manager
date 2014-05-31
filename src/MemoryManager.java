@@ -4,9 +4,22 @@ public class MemoryManager extends Thread {
 	private Memory m_memory;
 	private int m_processCount;
 	
-	public MemoryManager(final int processCount){
+	private static MemoryManager m_instance;
+	
+	private MemoryManager(final int processCount){
 		m_memory = new Memory(64);
 		m_processCount = processCount;
+	}
+	
+	public static MemoryManager getInstance(){
+		if (m_instance == null){
+			m_instance = new MemoryManager(2);
+		}
+		return m_instance;
+	}
+	
+	public Memory getMemory(){
+		return m_memory;
 	}
 	
 	public void run () {

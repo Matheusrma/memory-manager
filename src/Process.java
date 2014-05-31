@@ -11,15 +11,18 @@ public class Process extends Thread{
 	private Page[] m_pages;
 	private int m_workingSet;
 	private int m_id;
-
+	private int m_processAcessDelay;
+	
 	Map<Integer, Integer> m_frameTable;
 	List<Integer> m_allocatedPages;
 	
 	private static int s_id = 0;
+	private static Integer s_lock = 0;
 	
-	public Process(final int pageCount, final int workingSet){
+	public Process(final int pageCount, final int workingSet, final int processAcessDelay){
 		m_pages = new Page[pageCount];
 		m_workingSet = workingSet;
+		m_processAcessDelay = processAcessDelay;
 		
 		m_allocatedPages = new ArrayList<Integer>();
 		m_frameTable = new HashMap<Integer, Integer>();
@@ -30,17 +33,45 @@ public class Process extends Thread{
 	public void run () {
 		for (;;){
 			
-			allocateRandomPage();
-			printFrameTable();
+			synchronized (s_lock) {				
+				allocateRandomPage();
+				printFrameTable();
+			}
 			
 			try {
-				sleep(3 * 1000);
+				sleep(m_processAcessDelay);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 	}
+
+	private void allocateRandomPage() {
+		if (m_allocatedPages.size() >= m_workingSet){
+			deallocatePage();
+		}
+		
+		Random rnd = new Random();
+		int choosenPageIndex = rnd.nextInt(m_pages.length);
+		
+		while(m_allocatedPages.contains(choosenPageIndex))
+			choosenPageIndex = rnd.nextInt(m_pages.length);
+		
+		int usedFrameIndex = MemoryManager.getInstance().getMemory().allocatePage(m_pages[choosenPageIndex]);
+		
+		m_frameTable.put(choosenPageIndex, usedFrameIndex);
+		m_allocatedPages.add(choosenPageIndex);
+	}
 	
+	private void deallocatePage() {
+		Integer pageToDeallocateIndex = m_allocatedPages.get(0);
+		
+		MemoryManager.getInstance().getMemory().deallocatePage(m_pages[pageToDeallocateIndex]);
+		m_frameTable.remove(pageToDeallocateIndex);
+		m_allocatedPages.remove(0);
+	}
+
+	@SuppressWarnings("rawtypes")
 	private void printFrameTable(){
 		System.out.println("Thread " + m_id);
 		Iterator it = m_frameTable.entrySet().iterator();
@@ -48,19 +79,5 @@ public class Process extends Thread{
 	        Map.Entry pairs = (Map.Entry)it.next();
 	        System.out.println(pairs.getKey() + "-->" + pairs.getValue());
 	    }
-	}
-
-	private void allocateRandomPage() {
-		Random rnd = new Random();
-		
-		int choosenPage = rnd.nextInt(m_pages.length);;
-		
-		while(m_allocatedPages.contains(choosenPage))
-			choosenPage = rnd.nextInt(m_pages.length);
-		
-		int usedFrame = MemoryManager.getInstance().getMemory().allocatePage(m_pages[choosenPage]);
-		
-		m_allocatedPages.add(choosenPage);
-		m_frameTable.put(choosenPage, usedFrame);
 	}
 }

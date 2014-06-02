@@ -13,8 +13,8 @@ public class Process extends Thread{
 	private int m_pid;
 	private int m_processAcessDelay;
 	
-	Map<Integer, Integer> m_frameTable;
-	List<Integer> m_allocatedPages;
+	private Map<Integer, Integer> m_frameTable;
+	private List<Integer> m_allocatedPages;
 	
 	private static int s_nextPid = 0;
 	private static Integer s_lock = 0;

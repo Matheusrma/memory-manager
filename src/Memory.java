@@ -1,8 +1,10 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public class Memory {
@@ -11,7 +13,7 @@ public class Memory {
 	private Frame[] m_frames;
 	private List<Frame> m_freeFrames;
 	private Map<Page, Frame> m_frameTable;
-	private List<Integer> m_processPidList;
+	private Set<Integer> m_processPidSet;
 	private int m_workingSet;
 	
 	public Memory(final int frameCount, int processWorkingSet){
@@ -19,7 +21,7 @@ public class Memory {
 		m_frames = new Frame[frameCount];
 		m_freeFrames = new ArrayList<Frame>();
 		m_frameTable = new HashMap<Page, Frame>();
-		m_processPidList = new ArrayList<Integer>();
+		m_processPidSet = new LinkedHashSet<Integer>();
 		
 		for (int i = 0; i < frameCount; ++i){
 			m_frames[i] = new Frame(i);
@@ -32,20 +34,19 @@ public class Memory {
 			print();
 			
 			if (process.getAllocatedPages().size() >= m_workingSet) {
+				// page fault!
 				process.deallocatePage();
 			}
 			
 			if (m_freeFrames.isEmpty()){
-				removeProcess(m_processPidList.get(0));
-				m_processPidList.remove(0);
+				removeProcess(m_processPidSet.iterator().next());
+				m_processPidSet.remove(0);
 			}
 			
 			Frame choosenFrame = m_freeFrames.get(0);
 			m_freeFrames.remove(0);
 			
-			if (!m_processPidList.contains(page.getOwnerPid())){
-				m_processPidList.add(page.getOwnerPid());
-			}
+			m_processPidSet.add(page.getOwnerPid());
 			
 			m_frameTable.put(page, choosenFrame);
 

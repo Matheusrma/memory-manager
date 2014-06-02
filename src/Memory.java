@@ -12,8 +12,10 @@ public class Memory {
 	private List<Frame> m_freeFrames;
 	private Map<Page, Frame> m_frameTable;
 	private List<Integer> m_processPidList;
+	private int m_workingSet;
 	
-	public Memory(final int frameCount){
+	public Memory(final int frameCount, int processWorkingSet){
+		m_workingSet = processWorkingSet;
 		m_frames = new Frame[frameCount];
 		m_freeFrames = new ArrayList<Frame>();
 		m_frameTable = new HashMap<Page, Frame>();
@@ -25,11 +27,15 @@ public class Memory {
 		}
 	}
 	
-	public int allocatePage(Page page){
-		synchronized (m_lock) {					
+	public int allocatePage(Process process, Page page){
+		synchronized (m_lock) {
 			print();
 			
-			if (m_freeFrames.size() == 0){
+			if (process.getAllocatedPages().size() >= m_workingSet) {
+				process.deallocatePage();
+			}
+			
+			if (m_freeFrames.isEmpty()){
 				removeProcess(m_processPidList.get(0));
 				m_processPidList.remove(0);
 			}
@@ -58,19 +64,8 @@ public class Memory {
 		System.out.println("Memory has " + m_freeFrames.size() + " free frames");
 	}
 	
-	@SuppressWarnings("rawtypes")
 	private void removeProcess(final int pid){
-		List<Page> toRemovePages = new ArrayList<Page>();
-		Iterator it = m_frameTable.entrySet().iterator();
-		
-		while (it.hasNext()) {
-			Map.Entry pairs = (Map.Entry)it.next();
-			Page page = (Page)pairs.getKey();
-			
-			if (page.getOwnerPid() == pid){
-				toRemovePages.add(page);
-			}
-		}
+		List<Page> toRemovePages = getProcessPages(pid);
 		
 		System.out.println("SWAPPING OUT: " + toRemovePages.size() + " pages from Thread " + pid);
 		
@@ -78,6 +73,22 @@ public class Memory {
 			deallocatePage(toRemovePages.get(i));			
 		}
 		
-		MemoryManager.getInstance().getProcess(pid).deallocateAll();
+		Controller.getInstance().getProcess(pid).deallocateAll();
+	}
+
+	@SuppressWarnings("rawtypes")
+	private List<Page> getProcessPages(final int pid) {
+		List<Page> pages = new ArrayList<Page>();
+		Iterator it = m_frameTable.entrySet().iterator();
+		
+		while (it.hasNext()) {
+			Map.Entry pairs = (Map.Entry)it.next();
+			Page page = (Page)pairs.getKey();
+			
+			if (page.getOwnerPid() == pid){
+				pages.add(page);
+			}
+		}
+		return pages;
 	}
 }

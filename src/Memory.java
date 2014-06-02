@@ -27,6 +27,8 @@ public class Memory {
 	
 	public int allocatePage(Page page){
 		synchronized (m_lock) {					
+			print();
+			
 			if (m_freeFrames.size() == 0){
 				removeProcess(m_processPidList.get(0));
 				m_processPidList.remove(0);
@@ -40,8 +42,6 @@ public class Memory {
 			}
 			
 			m_frameTable.put(page, choosenFrame);
-			
-			print();
 
 			return choosenFrame.getAddress();
 		}
@@ -60,9 +60,9 @@ public class Memory {
 	
 	@SuppressWarnings("rawtypes")
 	private void removeProcess(final int pid){
-		System.out.println("REMOVING Thread " + pid);
 		List<Page> toRemovePages = new ArrayList<Page>();
 		Iterator it = m_frameTable.entrySet().iterator();
+		
 		while (it.hasNext()) {
 			Map.Entry pairs = (Map.Entry)it.next();
 			Page page = (Page)pairs.getKey();
@@ -72,12 +72,12 @@ public class Memory {
 			}
 		}
 		
-		System.out.println("Removed " + toRemovePages.size() + " pages.");
+		System.out.println("SWAPPING OUT: " + toRemovePages.size() + " pages from Thread " + pid);
 		
 		for (int i = 0; i < toRemovePages.size(); ++i){
-			m_freeFrames.add(m_frameTable.get(toRemovePages.get(i)));
-			m_frameTable.remove(toRemovePages.get(i));
-			MemoryManager.getInstance().getProcess(pid).deallocateAll();
+			deallocatePage(toRemovePages.get(i));			
 		}
+		
+		MemoryManager.getInstance().getProcess(pid).deallocateAll();
 	}
 }

@@ -21,6 +21,8 @@ public class Process extends Thread{
 	
 	public Process(final int pageCount, final int workingSet, final int processAcessDelay){
 		m_pid = s_nextPid++;
+		
+		System.out.println("Thread " + m_pid + " created.");
 
 		m_pages = new Page[pageCount];
 		
@@ -38,9 +40,11 @@ public class Process extends Thread{
 	public void run () {
 		for (;;){
 			
-			synchronized (s_lock) {				
+			synchronized (s_lock) {			
+				System.out.println("Thread " + m_pid + " start allocating");
 				allocateRandomPage();
 				printFrameTable();
+			    System.out.println();
 			}
 			
 			try {
@@ -76,6 +80,8 @@ public class Process extends Thread{
 	private void deallocatePage() {
 		Integer pageToDeallocateIndex = m_allocatedPages.get(0);
 		
+		System.out.println("Removing Page " + pageToDeallocateIndex);
+		
 		MemoryManager.getInstance().getMemory().deallocatePage(m_pages[pageToDeallocateIndex]);
 		m_frameTable.remove(pageToDeallocateIndex);
 		m_allocatedPages.remove(0);
@@ -83,11 +89,11 @@ public class Process extends Thread{
 
 	@SuppressWarnings("rawtypes")
 	private void printFrameTable(){
-		System.out.println("Thread " + m_pid);
+		System.out.println("FRAME TABLE");
 		Iterator it = m_frameTable.entrySet().iterator();
 	    while (it.hasNext()) {
 	        Map.Entry pairs = (Map.Entry)it.next();
-	        System.out.println(pairs.getKey() + "-->" + pairs.getValue());
+	        System.out.println("P:" + pairs.getKey() + " --> F:" + pairs.getValue());
 	    }
 	}
 
